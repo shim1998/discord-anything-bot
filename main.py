@@ -1,25 +1,53 @@
 import os
 from dotenv import load_dotenv
-import discord
+import nextcord
+from nextcord.ext import commands, tasks
+
 load_dotenv()
-intents = discord.Intents.all()
-intents.message_content = True
 
-client = discord.Client(intents=intents)
+intents = nextcord.Intents.all()
+members = []
+bot = commands.Bot(intents=intents)
 
-@client.event
+
+@bot.listen()
 async def on_ready():
-    print(f'We have logged in as {client.user}')
+    global members
+    members = list(bot.get_all_members())
 
-@client.event
-async def on_message(message):
-    members = list(client.get_all_members())
-    for member in members:
-    	print(member)
-    if message.author == client.user:
-        return
 
-    if message.content.startswith('$hello'):
-        await message.channel.send('Hello!')
+@tasks.loop(seconds=5)
+async def called_once_a_day():
+    message_channel = bot.get_channel(537263126526164992)
+    print(f"Got channel {message_channel}")
+    await message_channel.send("Your message")
 
-client.run(os.environ.get('DISCORD_BOT_TOKEN'))
+
+@called_once_a_day.before_loop
+async def before():
+    await bot.wait_until_ready()
+    print("Finished waiting")
+
+
+@bot.listen()
+async def on_member_join(member):
+    global members
+    members.append(member)
+    print(f"{member} joined")
+
+
+@bot.listen()
+async def on_member_leave(member):
+    global members
+    members.remove(member)
+    print(f"{member} left")
+
+
+@bot.slash_command(description="Replies with pong!")
+async def ping(interaction: nextcord.Interaction):
+    global members
+    members = list(bot.get_all_members())
+    await interaction.send("Pong!", ephemeral=True)
+
+called_once_a_day.start()
+bot.run(os.environ.get("DISCORD_BOT_TOKEN"))
