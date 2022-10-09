@@ -3,7 +3,9 @@ import random
 from dotenv import load_dotenv
 import nextcord
 from nextcord.ext import commands, tasks
+
 from preprocess import get_list
+from cron import tweet
 
 load_dotenv()
 
@@ -23,7 +25,7 @@ def generate_random_text():
             members_needed.append(member.name)
         x_ctr += 1
     x_ctr = 0
-    #print(text, ctr, members_needed)
+    # print(text, ctr, members_needed)
     for i in range(len(text)):
         if text[i] == -1:
             text[i] = members_needed[x_ctr]
@@ -37,9 +39,9 @@ async def on_ready():
     members = list(bot.get_all_members())
 
 
-@tasks.loop(seconds=5)
+@tasks.loop(hours=6)
 async def call_every_6_hours():
-    message_channel = bot.get_channel(537263126526164992)
+    message_channel = bot.get_channel(1025040536513548439)
     text = generate_random_text()
     await message_channel.send(text)
 
@@ -48,6 +50,17 @@ async def call_every_6_hours():
 async def before():
     await bot.wait_until_ready()
     print("TWEET")
+
+
+@tasks.loop(hours=12)
+async def call_every_12_hours():
+    tweet()
+
+
+@call_every_12_hours.before_loop
+async def cron():
+    await bot.wait_until_ready()
+    print("CRON")
 
 
 @bot.listen()
@@ -72,4 +85,5 @@ async def ping(interaction: nextcord.Interaction):
 
 
 call_every_6_hours.start()
+call_every_12_hours.start()
 bot.run(os.environ.get("DISCORD_BOT_TOKEN"))
