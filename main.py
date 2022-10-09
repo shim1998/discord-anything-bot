@@ -86,4 +86,4 @@ async def ping(interaction: nextcord.Interaction):
 
 call_every_6_hours.start()
 call_every_12_hours.start()
-bot.run(os.environ.get("DISCORD_BOT_TOKEN"))
+bot.run(os.getenv("DISCORD_BOT_TOKEN"))
